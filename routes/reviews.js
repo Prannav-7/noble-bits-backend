@@ -28,6 +28,21 @@ router.post('/', auth, async (req, res) => {
             });
         }
 
+        // Check if user has purchased this product (Delivered order only)
+        const Order = require('../models/Order');
+        const hasPurchased = await Order.findOne({
+            user: req.userId,
+            'items.product': product,
+            orderStatus: 'Delivered'
+        });
+
+        if (!hasPurchased) {
+            return res.status(403).json({
+                success: false,
+                message: 'You can only review products you have purchased and received'
+            });
+        }
+
         // Create review
         const review = new Review({
             product,
@@ -87,6 +102,42 @@ router.get('/product/:productId', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching reviews',
+            error: error.message
+        });
+    }
+});
+
+// @route   GET /api/reviews/can-review/:productId
+// @desc    Check if user can review a product
+// @access  Private
+router.get('/can-review/:productId', auth, async (req, res) => {
+    try {
+        const Order = require('../models/Order');
+
+        // Check if user has a delivered order with this product
+        const hasPurchased = await Order.findOne({
+            user: req.userId,
+            'items.product': req.params.productId,
+            orderStatus: 'Delivered'
+        });
+
+        // Check if user already reviewed this product
+        const existingReview = await Review.findOne({
+            user: req.userId,
+            product: req.params.productId
+        });
+
+        res.json({
+            success: true,
+            canReview: !!hasPurchased && !existingReview,
+            hasPurchased: !!hasPurchased,
+            hasReviewed: !!existingReview
+        });
+    } catch (error) {
+        console.error('Can review check error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error checking review eligibility',
             error: error.message
         });
     }

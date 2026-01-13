@@ -76,6 +76,29 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
+// @route   GET /api/orders/my-orders
+// @desc    Get current user's orders
+// @access  Private
+router.get('/my-orders', auth, async (req, res) => {
+    try {
+        const orders = await Order.find({ user: req.userId })
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            count: orders.length,
+            orders,
+        });
+    } catch (error) {
+        console.error('Get my orders error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching your orders',
+            error: error.message
+        });
+    }
+});
+
 // @route   GET /api/orders/user/:userId
 // @desc    Get all orders for a user
 // @access  Private
