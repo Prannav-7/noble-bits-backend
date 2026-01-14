@@ -2,8 +2,7 @@ const mongoose = require('mongoose');
 
 const reviewSchema = new mongoose.Schema({
     product: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product',
+        type: String,  // Changed from ObjectId to String to support both numeric and MongoDB IDs
         required: true,
     },
     user: {

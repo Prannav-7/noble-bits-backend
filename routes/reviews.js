@@ -19,15 +19,6 @@ router.post('/', auth, async (req, res) => {
             });
         }
 
-        // Check if product exists
-        const productExists = await Product.findById(product);
-        if (!productExists) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found'
-            });
-        }
-
         // Check if user has purchased this product (Delivered order only)
         const Order = require('../models/Order');
         const hasPurchased = await Order.findOne({
@@ -50,17 +41,26 @@ router.post('/', auth, async (req, res) => {
             userName: req.user.name,
             rating,
             comment,
+            isVerifiedPurchase: true  // Mark as verified since we checked delivered order
         });
 
         await review.save();
 
-        // Update product rating
-        const reviews = await Review.find({ product });
-        const avgRating = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+        // Try to update product rating in database (only if product exists in MongoDB)
+        try {
+            const productExists = await Product.findById(product);
+            if (productExists) {
+                const reviews = await Review.find({ product });
+                const avgRating = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
 
-        productExists.rating = Math.round(avgRating * 10) / 10; // Round to 1 decimal
-        productExists.reviewCount = reviews.length;
-        await productExists.save();
+                productExists.rating = Math.round(avgRating * 10) / 10; // Round to 1 decimal
+                productExists.reviewCount = reviews.length;
+                await productExists.save();
+            }
+        } catch (productError) {
+            // Product doesn't exist in MongoDB (using static products) - that's okay
+            console.log('Product not in database (using static products)');
+        }
 
         res.status(201).json({
             success: true,
@@ -88,7 +88,10 @@ router.post('/', auth, async (req, res) => {
 // @access  Public
 router.get('/product/:productId', async (req, res) => {
     try {
-        const reviews = await Review.find({ product: req.params.productId })
+        // Handle both numeric and ObjectId formats
+        const productId = req.params.productId;
+
+        const reviews = await Review.find({ product: productId })
             .populate('user', 'name')
             .sort({ createdAt: -1 });
 
@@ -114,8 +117,14 @@ router.get('/can-review/:productId', auth, async (req, res) => {
     try {
         const Order = require('../models/Order');
 
+        // Check if user has ANY order with this product
+        const hasOrdered = await Order.findOne({
+            user: req.userId,
+            'items.product': req.params.productId
+        });
+
         // Check if user has a delivered order with this product
-        const hasPurchased = await Order.findOne({
+        const hasDeliveredOrder = await Order.findOne({
             user: req.userId,
             'items.product': req.params.productId,
             orderStatus: 'Delivered'
@@ -129,8 +138,9 @@ router.get('/can-review/:productId', auth, async (req, res) => {
 
         res.json({
             success: true,
-            canReview: !!hasPurchased && !existingReview,
-            hasPurchased: !!hasPurchased,
+            canReview: !!hasDeliveredOrder && !existingReview,
+            hasPurchased: !!hasDeliveredOrder,  // Only true if delivered
+            hasOrdered: !!hasOrdered,           // True for any order status
             hasReviewed: !!existingReview
         });
     } catch (error) {
