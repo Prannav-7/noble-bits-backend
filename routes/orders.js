@@ -36,6 +36,40 @@ router.post('/', auth, async (req, res) => {
             });
         }
 
+        // Check and reduce stock for each product
+        const Product = require('../models/Product');
+
+        for (const item of items) {
+            try {
+                // Try to find product in MongoDB
+                const product = await Product.findById(item.product);
+
+                if (product) {
+                    // Check if enough stock is available
+                    if (product.stockQuantity < item.quantity) {
+                        return res.status(400).json({
+                            success: false,
+                            message: `Insufficient stock for ${product.name}. Only ${product.stockQuantity} units available.`
+                        });
+                    }
+
+                    // Reduce stock quantity
+                    product.stockQuantity -= item.quantity;
+
+                    // Update inStock status
+                    if (product.stockQuantity === 0) {
+                        product.inStock = false;
+                    }
+
+                    await product.save();
+                    console.log(`Stock reduced for ${product.name}: ${product.stockQuantity} remaining`);
+                }
+            } catch (productError) {
+                // Product not in MongoDB (using static products) - that's okay
+                console.log(`Product ${item.product} not in database (using static products)`);
+            }
+        }
+
         // Calculate final amount if not provided
         const calculatedFinalAmount = finalAmount || (totalAmount + (tax || 0) + (shippingCharges || 0));
 

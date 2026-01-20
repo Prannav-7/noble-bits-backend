@@ -33,11 +33,8 @@ router.get('/', async (req, res) => {
 
         const products = await Product.find(query).sort(sortOptions);
 
-        res.json({
-            success: true,
-            count: products.length,
-            products,
-        });
+        // Return products array directly for easier frontend consumption
+        res.json(products);
     } catch (error) {
         console.error('Get products error:', error);
         res.status(500).json({

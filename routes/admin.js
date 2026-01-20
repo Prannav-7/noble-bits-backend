@@ -148,9 +148,16 @@ router.get('/dashboard/stats', async (req, res) => {
         const totalProducts = await Product.countDocuments();
         const totalUsers = await User.countDocuments();
 
-        // Calculate total revenue
+        // Calculate total revenue - include both Completed payments and Delivered orders
         const revenueData = await Order.aggregate([
-            { $match: { paymentStatus: 'Completed' } },
+            {
+                $match: {
+                    $or: [
+                        { paymentStatus: 'Completed' },
+                        { orderStatus: 'Delivered' }
+                    ]
+                }
+            },
             { $group: { _id: null, total: { $sum: '$finalAmount' } } }
         ]);
         const totalRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
