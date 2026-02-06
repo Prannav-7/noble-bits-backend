@@ -1,6 +1,10 @@
-# Noble Bite Backend API
+# Noble Bites Backend API 🍰
 
-Backend API for Noble Bite - Traditional Snacks E-commerce Platform
+Backend API for Noble Bites - Traditional Snacks E-commerce Platform
+
+**Last Updated:** February 6, 2026  
+**Status:** ✅ Production Ready  
+**Database:** MongoDB Atlas (cluster0.9xaehox.mongodb.net)
 
 ## 🚀 Quick Start
 
@@ -100,20 +104,25 @@ Authorization: Bearer <your_jwt_token>
 
 ## 📊 Database Collections
 
-- **users** - User accounts with authentication
-- **products** - Product catalog with 10 traditional snacks
-- **orders** - Customer orders with shipping details
-- **reviews** - Product reviews with ratings
-- **wishlists** - User-saved favorite products
+**Current Database Status (Verified):**
+- **users** - 12 user accounts (including admin)
+- **products** - 16 traditional snacks and sweets
+- **orders** - 20 customer orders
+- **reviews** - 3 product reviews
+- **wishlists** - Active wishlist data
+
+**Last Migration:** February 6, 2026
 
 ## 🛠️ Environment Variables
 
 ```env
-MONGODB_URI=mongodb+srv://prannavp803_db_user:mtVnZZ9smGHAB7HS@cluster0.gprfdbn.mongodb.net/noblebits?retryWrites=true&w=majority
+MONGODB_URI=your_mongodb_connection_string_here
 PORT=5000
-JWT_SECRET=noblebits_secret_key_2025
+JWT_SECRET=your_jwt_secret_key_here
 NODE_ENV=development
 ```
+
+**Note:** Connection string is configured in `.env` file (not in git for security)
 
 ## 🧪 Testing the API
 
