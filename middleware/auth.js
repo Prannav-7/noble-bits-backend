@@ -6,29 +6,21 @@ const auth = async (req, res, next) => {
         // Get token from header
         const token = req.header('Authorization')?.replace('Bearer ', '');
 
-        console.log('=== Auth Middleware ===');
-        console.log('Authorization Header:', req.header('Authorization'));
-        console.log('Token extracted:', token ? 'Yes' : 'No');
-
-        if (!token) {
-            console.log('❌ No token provided');
+        // Check if token exists and is not the string "null"
+        if (!token || token === 'null' || token === 'undefined') {
             return res.status(401).json({
                 success: false,
-                message: 'No authentication token, access denied'
+                message: 'No authentication token, access denied' 
             });
         }
 
         // Verify token
-        console.log('Verifying token with JWT_SECRET...');
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log('✅ Token verified. User ID:', decoded.userId);
 
         // Find user
         const user = await User.findById(decoded.userId);
-        console.log('User found:', user ? `${user.name} (${user.email})` : 'Not found');
 
         if (!user || !user.isActive) {
-            console.log('❌ User not found or inactive');
             return res.status(401).json({
                 success: false,
                 message: 'User not found or inactive'
@@ -39,15 +31,9 @@ const auth = async (req, res, next) => {
         req.user = user;
         req.userId = decoded.userId;
 
-        console.log('✅ Auth successful for:', user.email);
         next();
     } catch (error) {
-        console.error('❌ Auth middleware error:', error.message);
-        if (error.name === 'JsonWebTokenError') {
-            console.error('JWT Error: Invalid token format or signature');
-        } else if (error.name === 'TokenExpiredError') {
-            console.error('JWT Error: Token has expired');
-        }
+        console.error('❌ Auth error:', error.message);
         res.status(401).json({
             success: false,
             message: 'Token is not valid',
